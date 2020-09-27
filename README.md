@@ -1,8 +1,8 @@
 # nlohmann_json_reflect
-a relect extension for https://github.com/nlohmann/json, write by c++17
+a reflect extension for https://github.com/nlohmann/json, write by c++17
 
 ## introduce
-It is an extension for nlohmann/json. why write this? Because nlohmann/json relect is not very powerful. It can not support complex Nested data structure. 
+It is an extension for nlohmann/json. why write this? Because nlohmann/json reflect is not very powerful. It can not support complex Nested data structure. 
 <br/>For example: you can not use nlohmann/json reflect macro to the reflect structure nested by std container .Or you must implement the interface defined by nlohmann/json.
 <br/>Anyway, it is not convenient for reflecting json to data structure directly.
 <br/>Use this extension, you can nest very complex data structure. std container nest std container, then nest reflect struct , then nest std container, layer after layer.
