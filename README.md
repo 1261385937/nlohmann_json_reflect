@@ -2,10 +2,10 @@
 a relect extension for https://github.com/nlohmann/json, write by c++17
 
 ## introduce
-it is an extension for nlohmann/json. why write this? Because nlohmann/json relect is not very powerful. It can not support complex Nested data structure. 
-<br/>For example: you can not use nlohmann/json reflect macro to the reflect structure nested by std container .Or you must implement the interface defined by nlohmann/json.
-<br/>Anyway, it is not convenient for reflecting json to data structure directly.
-<br/> use this extension, you can nest very complex data structure. std container nest std container, then nest reflect struct , then nest std container, layer after layer.
+<br/> It is an extension for nlohmann/json. why write this? Because nlohmann/json relect is not very powerful. It can not support complex Nested data structure. 
+<br/> For example: you can not use nlohmann/json reflect macro to the reflect structure nested by std container .Or you must implement the interface defined by nlohmann/json.
+<br/> Anyway, it is not convenient for reflecting json to data structure directly.
+<br/> Use this extension, you can nest very complex data structure. std container nest std container, then nest reflect struct , then nest std container, layer after layer.
 ## usage
 ```c++
 #include "json_reflect.hpp"
