@@ -12,6 +12,10 @@ It is an extension for nlohmann/json.
 <br/>
 <br/>Use this extension, you can nest very complex data structure. Std container nest Std container, then nest reflect struct , then nest std container, and so on, layer after layer. In one word, It can support any complex data structure which is defined by user.
 
+## Note
+Structure fields do not need to be forced a one-to-one correspondence with JSON field.
+<br/>If the field is not existed in structure or field,  a default empty value is provided.
+
 ## Usage
 ```c++
 #include "json_reflect.hpp"
