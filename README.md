@@ -14,7 +14,7 @@ It is an extension for nlohmann/json.
 
 ## Note
 Structure fields do not need to be forced a one-to-one correspondence with JSON field.
-<br/>If the field is not existed in structure or field,  a default empty value is provided.
+<br/>If the field is not existed in json but in structure , a default empty value is provided when reflect json to structure.
 
 ## Usage
 ```c++
