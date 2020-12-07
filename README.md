@@ -1,5 +1,5 @@
 # nlohmann_json_reflect
-a reflect extension for https://github.com/nlohmann/json, write by c++17
+a reflect extension for https://github.com/nlohmann/json, written by c++17
 
 ## Introduce
 It is an extension for nlohmann/json. 
