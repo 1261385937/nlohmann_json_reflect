@@ -1,5 +1,6 @@
 # nlohmann_json_reflect
 a reflect extension for https://github.com/nlohmann/json, written by c++17
+</br>It can support any complex data structure which is defined by user.
 
 ## Introduce
 It is an extension for nlohmann/json. 
@@ -10,7 +11,7 @@ It is an extension for nlohmann/json.
 <br/>
 <br/>Anyway, it is not convenient for reflecting json to data structure directly, also data structure to json.
 <br/>
-<br/>Use this extension, you can nest very complex data structure. Std container nest Std container, then nest reflect struct , then nest std container, and so on, layer after layer. In one word, It can support any complex data structure which is defined by user.
+<br/>Use this extension, you can nest very complex data structure. Std container nest Std container, then nest reflect struct , then nest std container, and so on, layer after layer.
 
 ## Note
 Structure fields do not need to be forced a one-to-one correspondence with JSON field.
