@@ -1,4 +1,7 @@
 #pragma once
+#ifndef MARCO_REFLECTION
+#define MARCO_REFLECTION
+
 #include <string_view>
 #include <tuple>
 #include <array>
@@ -174,28 +177,52 @@
 
 #define ELEMENT(e) e
 
-static constexpr decltype(auto) trim_front_space(std::string_view src) {
-    if (src.empty()) {
+namespace reflection {
+    struct reflect {};
+
+    template<typename T, typename = void>
+    struct reflection :std::false_type {};
+
+    /*template<typename T>
+    struct reflection<T, std::void_t<typename T::reflect_type>> :std::true_type {};*/
+
+    /* template<typename T>
+     struct reflection<T, std::void_t<std::enable_if_t<std::is_same_v<typename T::reflect_type, reflect>>>> :std::true_type {};*/
+
+    template<typename T>
+    struct reflection<T, std::enable_if_t<std::is_same_v<typename T::reflect_type, reflect>>> :std::true_type {};
+
+    template<typename T>
+    inline constexpr bool is_reflection_v = reflection<T>::value;
+
+    static constexpr decltype(auto) trim_front_space(std::string_view src) {
+        if (src.empty()) {
+            return src;
+        }
+        while (src[0] == ' ') {
+            src = src.substr(1);
+        }
         return src;
     }
-    while (src[0] == ' ') {
-        src = src.substr(1);
+
+    template<size_t N>
+    static constexpr decltype(auto) split(std::string_view s) {
+        auto end = s.find_first_of(',');
+        std::array<std::string_view, N> output;
+        size_t i = 0;
+        while (end != std::string_view::npos) {
+            output[i++] = trim_front_space(s.substr(0, end));
+            s = s.substr(end + 1);
+            end = s.find_first_of(',');
+        }
+        output[i] = trim_front_space(s);
+        return output;
     }
-    return src;
 }
 
-template<size_t N>
-static constexpr decltype(auto) split(std::string_view s) {
-    auto end = s.find_first_of(',');
-    std::array<std::string_view, N> output;
-    size_t i = 0;
-    while (end != std::string_view::npos) {
-        output[i++] = trim_front_space(s.substr(0, end));
-        s = s.substr(end + 1);
-        end = s.find_first_of(',');
-    }
-    output[i] = trim_front_space(s);
-    return output;
+template<typename F, std::size_t ... Index>
+static constexpr void for_each_tuple(F&& f, std::index_sequence<Index...>) {
+    (std::forward<F>(f)(std::integral_constant<std::size_t, Index>()), ...);
 }
 
 #define META_DATA_IMPL(...) \
@@ -210,30 +237,8 @@ static constexpr decltype(auto) split(std::string_view s) {
 	using reflect_type = reflection::reflect;\
 	using args_size_t = std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>;\
 	constexpr static decltype(auto) elements_name() { \
-			return split<args_size_t::value>(#__VA_ARGS__); \
+			return reflection::split<args_size_t::value>(#__VA_ARGS__); \
 		}\
 	META_DATA(STRUCT_NAME, GET_ARG_COUNT(__VA_ARGS__), __VA_ARGS__)
 
-namespace reflection {
-	struct reflect {};
-
-	template<typename T, typename = void>
-	struct reflection :std::false_type {};
-
-	/*template<typename T>
-	struct reflection<T, std::void_t<typename T::reflect_type>> :std::true_type {};*/
-
-   /* template<typename T>
-    struct reflection<T, std::void_t<std::enable_if_t<std::is_same_v<typename T::reflect_type, reflect>>>> :std::true_type {};*/
-
-    template<typename T>
-    struct reflection<T, std::enable_if_t<std::is_same_v<typename T::reflect_type, reflect>>> :std::true_type {};
-    
-	template<typename T>
-	inline constexpr bool is_reflection_v = reflection<T>::value;
-}
-
-template<typename F, std::size_t ... Index>
-static constexpr void for_each_tuple(F&& f, std::index_sequence<Index...>) {
-    (std::forward<F>(f)(std::integral_constant<std::size_t, Index>()), ...);
-}
+#endif // !MARCO_REFLECTION
