@@ -51,7 +51,73 @@ struct json_struct {
 	REFLECT(json_struct, nothing, name, happy, pi, answer, list, object, map, taowa);
 };
 
-int main() {	
+auto json1 = R"({
+    "MixedArray": [
+        "one", 
+        50, 
+        false, 
+        12.005
+    ], 
+    "People": [
+        {
+            "name": "qq849635649", 
+            "age": 0, 
+            "sex": true,
+			"flow":3.156
+        }, 
+        {
+            "name": "qq849635649", 
+            "age": 10, 
+            "sex": false
+        }, 
+        {
+            "name": "qq849635649", 
+            "age": 20, 
+            "sex": true,
+			"zzzz": "11"
+        }
+    ]
+})";
+auto json2 = R"([
+        "one", 
+        50, 
+        false, 
+        12.005
+    ])";
+
+struct e1 {
+	std::string name;
+	int age;
+	bool sex;
+	float flow;
+	REFLECT(e1, name, age, sex, flow);
+};
+struct e2 {
+	std::string name;
+	int age;
+	bool sex;
+	REFLECT(e2, name, age, sex);
+};
+struct e3 {
+	std::string name;
+	int age;
+	bool sex;
+	std::string zzzz;
+	REFLECT(e3, name, age, sex, zzzz);
+};
+struct sjson1 {
+	std::tuple<std::string, int, bool, float> MixedArray;
+	std::tuple<e1, e2, e3> People;
+	REFLECT(sjson1, MixedArray, People);
+};
+
+int main() {
+	auto sjson1_data = jreflect::from_json<sjson1>(json1);
+	auto sjson1_str = jreflect::to_json(sjson1_data);
+
+	auto sjson2_data = jreflect::from_json<std::tuple<std::string, int, bool, float>>(json2);
+	auto sjson2_str = jreflect::to_json(sjson2_data);
+
 	auto j_data = jreflect::from_json<json_struct>(json_str);
 	auto j_str = jreflect::to_json(j_data);
 	return 0;
