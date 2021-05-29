@@ -1,4 +1,6 @@
 #include "json_reflect.hpp"
+#include<stack>
+#include<queue>
 
 auto json_str = R"(
 {
@@ -28,28 +30,31 @@ auto json_str = R"(
 })";
 
 struct obj {
-	std::string currency;
-	float value;
-	REFLECT(obj, currency, value);
+    std::string currency;
+    float value;
+    //REFLECT_INTRUSIVE(obj, currency, value);
 };
+REFLECT_NON_INTRUSIVE(obj, currency, value);
 
 struct zzz {
-	std::string zz;
-	REFLECT(zzz, zz);
+    std::string zz;
+    //REFLECT_INTRUSIVE(zzz, zz);
 };
+REFLECT_NON_INTRUSIVE(zzz, zz);
 
 struct json_struct {
-	std::string nothing;
-	std::string name;
-	bool happy;
-	float pi;
-	std::unordered_map <std::string, int> answer;
-	std::vector<int> list;
-	obj object;
-	std::map<std::string, std::forward_list<obj>> map;
-	std::unordered_map<std::string, std::map<std::string, zzz>> taowa;
-	REFLECT(json_struct, nothing, name, happy, pi, answer, list, object, map, taowa);
+    std::string nothing;
+    std::string name;
+    bool happy;
+    float pi;
+    std::unordered_map <std::string, int> answer;
+    std::vector<int> list;
+    obj object;
+    std::map<std::string, std::forward_list<obj>> map;
+    std::unordered_map<std::string, std::map<std::string, zzz>> taowa;
+    //REFLECT_INTRUSIVE(json_struct, nothing, name, happy, pi, answer, list, object, map, taowa);
 };
+REFLECT_NON_INTRUSIVE(json_struct, nothing, name, happy, pi, answer, list, object, map, taowa);
 
 auto json1 = R"({
     "MixedArray": [
@@ -86,39 +91,47 @@ auto json2 = R"([
     ])";
 
 struct e1 {
-	std::string name;
-	int age;
-	bool sex;
-	float flow;
-	REFLECT(e1, name, age, sex, flow);
+    std::string name;
+    int age;
+    bool sex;
+    float flow;
+    //REFLECT_INTRUSIVE(e1, name, age, sex, flow);
 };
+REFLECT_NON_INTRUSIVE(e1, name, age, sex, flow);
+
 struct e2 {
-	std::string name;
-	int age;
-	bool sex;
-	REFLECT(e2, name, age, sex);
+    std::string name;
+    int age;
+    bool sex;
+    //REFLECT_INTRUSIVE(e2, name, age, sex);
 };
+REFLECT_NON_INTRUSIVE(e2, name, age, sex);
+
 struct e3 {
-	std::string name;
-	int age;
-	bool sex;
-	std::string zzzz;
-	REFLECT(e3, name, age, sex, zzzz);
+    std::string name;
+    int age;
+    bool sex;
+    std::string zzzz;
+    //REFLECT_INTRUSIVE(e3, name, age, sex, zzzz);
 };
+REFLECT_NON_INTRUSIVE(e3, name, age, sex, zzzz);
+
 struct sjson1 {
-	std::tuple<std::string, int, bool, float> MixedArray;
-	std::tuple<e1, e2, e3> People;
-	REFLECT(sjson1, MixedArray, People);
+    std::tuple<std::string, int, bool, float> MixedArray;
+    std::tuple<e1, e2, e3> People;
+    //REFLECT_INTRUSIVE(sjson1, MixedArray, People);
 };
+REFLECT_NON_INTRUSIVE(sjson1, MixedArray, People);
+
 
 int main() {
-	auto sjson1_data = jreflect::from_json<sjson1>(json1);
-	auto sjson1_str = jreflect::to_json(sjson1_data);
+    auto sjson1_data = jreflect::from_json<sjson1>(json1);
+    auto sjson1_str = jreflect::to_json(sjson1_data);
 
-	auto sjson2_data = jreflect::from_json<std::tuple<std::string, int, bool, float>>(json2);
-	auto sjson2_str = jreflect::to_json(sjson2_data);
+    auto sjson2_data = jreflect::from_json<std::tuple<std::string, int, bool, float>>(json2);
+    auto sjson2_str = jreflect::to_json(sjson2_data);
 
-	auto j_data = jreflect::from_json<json_struct>(json_str);
-	auto j_str = jreflect::to_json(j_data);
-	return 0;
+    auto j_data = jreflect::from_json<json_struct>(json_str);
+    auto j_str = jreflect::to_json(j_data);
+    return 0;
 }

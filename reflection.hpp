@@ -181,19 +181,26 @@ namespace reflection {
     struct reflect {};
 
     template<typename T, typename = void>
-    struct reflection :std::false_type {};
-
-    /*template<typename T>
-    struct reflection<T, std::void_t<typename T::reflect_type>> :std::true_type {};*/
-
-    /* template<typename T>
-     struct reflection<T, std::void_t<std::enable_if_t<std::is_same_v<typename T::reflect_type, reflect>>>> :std::true_type {};*/
+    struct intrusive_reflection :std::false_type {};
 
     template<typename T>
-    struct reflection<T, std::enable_if_t<std::is_same_v<typename T::reflect_type, reflect>>> :std::true_type {};
+    struct intrusive_reflection<T, std::enable_if_t<std::is_same_v<typename T::reflect_type, reflect>>> :std::true_type {};
 
     template<typename T>
-    inline constexpr bool is_reflection_v = reflection<T>::value;
+    inline constexpr bool is_intrusive_reflection_v = intrusive_reflection<T>::value;
+
+    template<typename T, typename = void>
+    struct non_intrusive_reflection :std::false_type {};
+
+    template<typename T>
+    struct non_intrusive_reflection<T, std::enable_if_t<std::is_same_v<typename decltype(reflection_reflect_member(std::declval<T>()))::reflect_type, reflect>>> :std::true_type {};
+
+    template<typename T>
+    inline constexpr bool is_non_intrusive_reflection_v = non_intrusive_reflection<T>::value;
+
+    template<typename T>
+    inline constexpr bool is_reflection_v = is_intrusive_reflection_v<T> || is_non_intrusive_reflection_v<T>;
+
 
     static constexpr decltype(auto) trim_front_space(std::string_view src) {
         if (src.empty()) {
@@ -225,20 +232,33 @@ static constexpr void for_each_tuple(F&& f, std::index_sequence<Index...>) {
     (std::forward<F>(f)(std::integral_constant<std::size_t, Index>()), ...);
 }
 
-#define META_DATA_IMPL(...) \
+#define ADDRESS(...) \
+    using args_size_t = std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>;\
 	constexpr static decltype(auto) elements_address(){\
-            return std::make_tuple(__VA_ARGS__);\
-        }\
+        return std::make_tuple(__VA_ARGS__);\
+    }
 
-#define META_DATA(STRUCT_NAME, ARG_COUNT, ...) \
-    META_DATA_IMPL(MAKE_ARG_LIST(ARG_COUNT, &STRUCT_NAME::ELEMENT, __VA_ARGS__))
+#define ELEMENTS_ADDRESS(STRUCT_NAME, ARG_COUNT, ...) \
+   ADDRESS(MAKE_ARG_LIST(ARG_COUNT, &STRUCT_NAME::ELEMENT, __VA_ARGS__))
 
-#define REFLECT(STRUCT_NAME, ...) \
+#define REFLECT_INTRUSIVE(STRUCT_NAME, ...) \
 	using reflect_type = reflection::reflect;\
-	using args_size_t = std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>;\
+    ELEMENTS_ADDRESS(STRUCT_NAME, GET_ARG_COUNT(__VA_ARGS__), __VA_ARGS__)\
 	constexpr static decltype(auto) elements_name() { \
-			return reflection::split<args_size_t::value>(#__VA_ARGS__); \
-		}\
-	META_DATA(STRUCT_NAME, GET_ARG_COUNT(__VA_ARGS__), __VA_ARGS__)
+		return reflection::split<args_size_t::value>(#__VA_ARGS__); \
+	}\
+
+
+#define REFLECT_NON_INTRUSIVE(STRUCT_NAME, ...) \
+    constexpr static decltype(auto) reflection_reflect_member(const STRUCT_NAME& ) {\
+        struct reflection_member {\
+            using reflect_type = reflection::reflect; \
+            ELEMENTS_ADDRESS(STRUCT_NAME, GET_ARG_COUNT(__VA_ARGS__), __VA_ARGS__)\
+            constexpr static decltype(auto) elements_name() { \
+                return reflection::split<args_size_t::value>(#__VA_ARGS__); \
+            }\
+        };\
+        return reflection_member{};\
+    };
 
 #endif // !MARCO_REFLECTION
