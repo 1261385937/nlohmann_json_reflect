@@ -99,7 +99,9 @@ namespace jreflect {
                     value = to_std_container<type>(j[i]);
                 }
                 else {
-                    value = j[i].get<type>();
+                    if (j.size() > 0) {
+                        value = j[i].get<type>();
+                    }
                 }
             }, std::make_index_sequence<size>());
         }

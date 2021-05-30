@@ -152,11 +152,11 @@ namespace jreflect {
     struct is_has_reflect_type<T, std::enable_if_t<std::is_same_v<typename decltype(reflection_reflect_member(std::declval<T>()))::reflect_type, reflection::reflect>>> :std::true_type {};
 
     template<typename T>
-    struct is_has_reflect_type<T, std::enable_if_t<is_sequence_std_container_v<T>, std::void_t<typename T::value_type>>>
+    struct is_has_reflect_type<T, std::enable_if_t<is_sequence_std_container_v<T>/*, std::void_t<typename T::value_type>*/>>
         : is_has_reflect_type<typename T::value_type> {};
 
     template<typename T>
-    struct is_has_reflect_type<T, std::enable_if_t<is_associative_std_container_v<T>, std::void_t<typename T::mapped_type>>>
+    struct is_has_reflect_type<T, std::enable_if_t<is_associative_std_container_v<T>/*, std::void_t<typename T::mapped_type>*/>>
         : is_has_reflect_type<typename T::mapped_type> {};
 
     template<typename T>
