@@ -8,7 +8,11 @@ auto json1 = R"({
         12.005
     ], 
     "People": [
-        { 
+        {
+            "name": "qwer", 
+            "age": 1000, 
+            "sex": true,
+			"flow": 3.000
         }, 
         {
             "name": "qq849635649", 
@@ -23,45 +27,35 @@ auto json1 = R"({
         }
     ]
 })";
-auto json2 = R"([
-        "one", 
-        50, 
-        false, 
-        12.005
-    ])";
 
 struct e1 {
-    std::string name;
+    std::optional<std::string> name;
     int age;
     bool sex;
     float flow;
-    //REFLECT_INTRUSIVE(e1, name, age, sex, flow);
+    REFLECT_INTRUSIVE(e1, name, age, sex, flow);
 };
-REFLECT_NON_INTRUSIVE(e1, name, age, sex, flow);
 
 struct e2 {
     std::string name;
     int age;
     bool sex;
-    //REFLECT_INTRUSIVE(e2, name, age, sex);
+    REFLECT_INTRUSIVE(e2, name, age, sex);
 };
-REFLECT_NON_INTRUSIVE(e2, name, age, sex);
 
 struct e3 {
     std::string name;
     int age;
     bool sex;
     std::string zzzz;
-    //REFLECT_INTRUSIVE(e3, name, age, sex, zzzz);
+    REFLECT_INTRUSIVE(e3, name, age, sex, zzzz);
 };
-REFLECT_NON_INTRUSIVE(e3, name, age, sex, zzzz);
 
 struct sjson1 {
     std::tuple<std::string, int, bool, float> MixedArray;
-    std::tuple<e1, e2, e3> People;
-    //REFLECT_INTRUSIVE(sjson1, MixedArray, People);
+    std::tuple<std::optional<e1>, e2, e3> People;
+    REFLECT_INTRUSIVE(sjson1, MixedArray, People);
 };
-REFLECT_NON_INTRUSIVE(sjson1, MixedArray, People);
 
 
 
@@ -131,25 +125,20 @@ REFLECT_NON_INTRUSIVE(json_struct, nothing, name, happy, pi, answer, list, objec
 
 int main() {
 
-    try {
-        auto j = nlohmann::json::parse(json_str);
-        auto b = j["nothing"].is_object();
-        std::string pi;
-        j.at("xx").get_to(pi);
-    }
-    catch (std::exception& e) {
-        auto err = e.what();
-        int x = 4;
-    }
+    /*auto sjson1_data = jreflect::from_json<sjson1>(json1);*/
 
-  
+    sjson1 sjson1_data;
+    sjson1_data.MixedArray = std::make_tuple("one", 50, false, 12.005f);
+    sjson1_data.People = std::make_tuple(
+        e1{ std::nullopt, 1000, true, 3.000f },
+        e2{ "qq849635649", 10, false },
+        e3{ "qq849635649", 20, true,"11" });
+    auto sjson1_str = jreflect::to_json(sjson1_data);
+
+
     auto j_data = jreflect::from_json<json_struct>(json_str);
     auto j_str = jreflect::to_json(j_data);
 
-    auto sjson1_data = jreflect::from_json<sjson1>(json1);
-    auto sjson1_str = jreflect::to_json(sjson1_data);
 
-    auto sjson2_data = jreflect::from_json<std::tuple<std::string, int, bool, float>>(json2);
-    auto sjson2_str = jreflect::to_json(sjson2_data);
     return 0;
 }

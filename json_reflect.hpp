@@ -124,7 +124,7 @@ static T from_json_detail(const nlohmann::json& j) {
 
         auto& j = json[element_name];
         if constexpr (is_std_optional_v<type>) {
-            using real_type = typename type::value_type;  
+            using real_type = typename type::value_type;
             if constexpr (reflection::is_reflection_v<real_type>) {
                 element = from_json_detail<real_type>(j);
             }
@@ -181,135 +181,147 @@ static T from_json(const std::string& json_str) {
 
 
 template<typename T>
-static nlohmann::json to_json_deatil(const T& t);
+static nlohmann::json to_json_detail(T&& t);
 
 template<typename Container>
-static nlohmann::json from_std_container(const Container& c) {
-    nlohmann::json j;
-    if constexpr (is_sequence_std_container_v<Container>) {
-        using value_type = typename Container::value_type;
-        for (auto iter = c.begin(); iter != c.end(); ++iter) {
-            if constexpr (reflection::is_reflection_v<value_type>) {
-                j.emplace_back(to_json_deatil<value_type>(*iter));
-            }
-            else if constexpr (is_std_container_v<value_type> && is_has_reflect_type_v<value_type>) {
-                j.emplace_back(from_std_container(*iter));
-            }
-            else {
-                j.emplace_back(nlohmann::json(*iter));
-            }
+static nlohmann::json from_std_container(Container&& c);
+
+template<bool ElementName = false, typename String = std::string, typename Element, typename Pred>
+static void deal_detail(nlohmann::json& j, Element&& element, Pred&& pred, String&& element_name = "") {
+    using element_type = std::remove_reference_t<Element>;
+
+    if constexpr (reflection::is_reflection_v<element_type>) {
+        if constexpr (ElementName) {
+            pred(j, std::forward<String>(element_name), to_json_detail(element));
+        }
+        else {
+            pred(j, to_json_detail(element));
         }
     }
-    else if constexpr (is_associative_std_container_v<Container>) {
-        using key_type = typename Container::key_type;
-        using mapped_type = typename Container::mapped_type;
+    else if constexpr (is_std_tuple_v<element_type> ||
+        (is_std_container_v<element_type> && is_has_reflect_type_v<element_type>)) {
+        if constexpr (ElementName) {
+            pred(j, std::forward<String>(element_name), from_std_container(element));
+        }
+        else {
+            pred(j, from_std_container(element));
+        }
+    }
+    else if constexpr (is_std_optional_v<element_type>) {
+        if constexpr (ElementName) {
+            element.has_value() ?
+                pred(j, std::forward<String>(element_name), to_json_detail(element.value()))
+                :
+                pred(j, std::forward<String>(element_name), nlohmann::json{});
+        }
+        else {
+            element.has_value() ?
+                pred(j, to_json_detail(element.value()))
+                :
+                pred(j, nlohmann::json{});
+        }
+    }
+    else {
+        if constexpr (ElementName) {
+            pred(j, std::forward<String>(element_name), element);
+        }
+        else {
+            pred(j, element);
+        }
+    }
+}
 
+template<typename Container>
+static nlohmann::json from_std_container(Container&& c) {
+    using container_type = std::decay_t<Container>;
+    nlohmann::json j;
+    if constexpr (is_sequence_std_container_v<container_type>) {
+        for (auto iter = c.begin(); iter != c.end(); ++iter) {
+            deal_detail(j, *iter, [](auto&& j, auto&& ...args) {
+                j.emplace_back(std::forward<decltype(args)>(args)...);
+            });
+        }
+    }
+    else if constexpr (is_associative_std_container_v<container_type>) {
+        using key_type = typename container_type::key_type;
         if constexpr (!std::is_same_v<key_type, std::string>) {
             static_assert(always_false_v<key_type>, "associative containers key type only can be std::string");
         }
-
         for (auto iter = c.begin(); iter != c.end(); ++iter) {
-            if constexpr (reflection::is_reflection_v<mapped_type>) {
-                j.emplace(iter->first, to_json_deatil<mapped_type>(iter->second));
-            }
-            else if constexpr (is_std_container_v<mapped_type> && is_has_reflect_type_v<mapped_type>) {
-                j.emplace(iter->first, from_std_container(iter->second));
-            }
-            else {
-                j.emplace(iter->first, nlohmann::json(iter->second));
-            }
+            deal_detail<true>(j, iter->second, [](auto&& j, auto&& ...args) {
+                j.emplace(std::forward<decltype(args)>(args)...);
+            }, iter->first);
         }
     }
-    else if constexpr (is_std_tuple_v<Container>) { //Mixed Array
-        constexpr auto size = std::tuple_size_v<Container>;
+    else if constexpr (is_std_tuple_v<container_type>) { //Mixed Array
+        constexpr auto size = std::tuple_size_v<container_type>;
         for_each_tuple([&j, &c](auto i) {
             auto& value = std::get<i>(c);
-            using type = std::decay_t<decltype(value)>;
-            if constexpr (reflection::is_reflection_v<type>) {
-                j.emplace_back(to_json_deatil<type>(value));
-            }
-            else if constexpr ((is_std_container_v<type> && is_has_reflect_type_v<type>) || is_std_tuple_v<type>) {
-                j.emplace_back(from_std_container(value));
-            }
-            else {
-                j.emplace_back(nlohmann::json(value));
-            }
+            deal_detail(j, value, [](auto&& j, auto&& ...args) {
+                j.emplace_back(std::forward<decltype(args)>(args)...);
+            });
         }, std::make_index_sequence<size>());
     }
     else {
-        static_assert(always_false_v<Container>, "Container type is error");
+        static_assert(always_false_v<container_type>, "Container type is error");
     }
     return j;
 }
 
-template<typename T>
-static nlohmann::json to_json_deatil(const T& t) {
-    constexpr auto deal_reflect = [](auto index, auto&&...args) {
-        auto&& [j, names, address, t] = std::forward_as_tuple(std::forward<decltype(args)>(args)...);
-        auto& element = t.*std::get<index>(address);
-        using type = std::remove_reference_t<decltype(element)>;
+template<typename ReflectType, typename T>
+static void traversing_type(nlohmann::json& j, T&& obj) {
+    constexpr auto names = ReflectType::elements_name();
+    constexpr auto address = ReflectType::elements_address();
+    for_each_tuple([&j, &obj, &names, &address](auto index) {
+        auto& element = obj.*std::get<index>(address);
+        using element_type = std::remove_reference_t<decltype(element)>;
         auto element_name = std::string(names[index]);
 
-        if constexpr (is_std_optional_v<type>) {
-            using real_type = typename type::value_type;
-            if constexpr (reflection::is_reflection_v<real_type>) {
-                if (element.has_value()) {
-                    j.emplace(element_name, to_json_deatil<real_type>(element.value()));
-                }
-            }
-            else if constexpr (is_std_container_v<real_type> && is_has_reflect_type_v<real_type> || is_std_tuple_v<real_type>) {
-                if (element.has_value()) {
-                    j.emplace(element_name, from_std_container<real_type>(element.value()));
-                }
-            }
-            else {
-                if (element.has_value()) {
-                    j.emplace(element_name, element.value());
-                }
-            }
+        if constexpr (is_std_optional_v<element_type>) {
+            element.has_value() ?
+                deal_detail<true>(j, element.value(), [](auto&& j, auto&& ...args) {
+                j.emplace(std::forward<decltype(args)>(args)...);
+            }, std::move(element_name))
+                :
+                (void)j.emplace(std::move(element_name), nlohmann::json{});
         }
         else {
-            if constexpr (reflection::is_reflection_v<type>) {
-                j.emplace(element_name, to_json_deatil<type>(element));
-            }
-            else if constexpr (is_std_container_v<type> && is_has_reflect_type_v<type> || is_std_tuple_v<type>) {
-                j.emplace(element_name, from_std_container<type>(element));
-            }
-            else {
-                j.emplace(element_name, element);
-            }
+            deal_detail<true>(j, element, [](auto&& j, auto&& ...args) {
+                j.emplace(std::forward<decltype(args)>(args)...);
+            }, std::move(element_name));
         }
-    };
+    }, std::make_index_sequence<ReflectType::args_size_t::value>());
+}
 
+template<typename T>
+static nlohmann::json to_json_detail(T&& obj) {
+    using type = std::remove_reference_t<T>;
     nlohmann::json j;
-    if constexpr (reflection::is_intrusive_reflection_v<T>) {
-        constexpr auto names = T::elements_name();
-        constexpr auto address = T::elements_address();
-        for_each_tuple([&j, &names, &address, &t, &deal_reflect](auto index) {
-            deal_reflect(index, j, names, address, t);
-        }, std::make_index_sequence<T::args_size_t::value>());
+    if constexpr (reflection::is_intrusive_reflection_v<type>) {
+        traversing_type<type>(j, obj);
     }
-    else if constexpr (reflection::is_non_intrusive_reflection_v<T>) {
-        using TT = decltype(reflection_reflect_member(std::declval<T>()));
-        constexpr auto names = TT::elements_name();
-        constexpr auto address = TT::elements_address();
-        for_each_tuple([&j, &names, &address, &t, &deal_reflect](auto index) {
-            deal_reflect(index, j, names, address, t);
-        }, std::make_index_sequence<TT::args_size_t::value>());
+    else if constexpr (reflection::is_non_intrusive_reflection_v<type>) {
+        using TT = decltype(reflection_reflect_member(std::declval<type>()));
+        traversing_type<TT>(j, obj);
     }
-    else if constexpr (is_std_container_v<T> && is_has_reflect_type_v<T> || is_std_tuple_v<T>) {
-        j = from_std_container<T>(t);
+    else if constexpr (is_std_tuple_v<type> ||
+        (is_std_container_v<type> && is_has_reflect_type_v<type>)) {
+        j = from_std_container<type>(obj);
+    }
+    else if (is_std_optional_v<type>) {
+        //for the total (part) json may be null
+        j = obj.has_value() ?
+            to_json_detail(obj.value()) : nlohmann::json{};
     }
     else {
-        nlohmann::json j0(t);
-        j = std::move(j0);
+        j = nlohmann::json{ obj };
     }
     return j;
 }
 
 template<typename T>
-static std::string to_json(const T& t) {
-    auto j = to_json_deatil<T>(t);
+static std::string to_json(T&& obj) {
+    auto j = to_json_detail(obj);
     return j.dump();
 }
 }
