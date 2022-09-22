@@ -30,7 +30,7 @@ auto json1 = R"({
 })";
 
 struct e1 {
-    std::string name;
+    std::optional<std::string> name;
     int age;
     bool sex;
     float flow;
@@ -125,9 +125,9 @@ struct json_struct {
 REFLECT_NON_INTRUSIVE(json_struct, nothing, name, happy, pi, answer, list, object, map, taowa);
 
 int main() {
-
     auto json1_data = jreflect::from_json<sjson1>(json1);
     auto json1_str = jreflect::to_json(json1_data);
+
 
     auto j_data = jreflect::from_json<json_struct>(json_str);
     auto j_str = jreflect::to_json(j_data);
