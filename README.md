@@ -6,11 +6,9 @@ A reflect extension for https://github.com/nlohmann/json, written by c++17
 It is an extension for nlohmann/json. 
 <br/>
 <br/>Why write this? Because nlohmann/json reflect is not very powerful. It can not support complex nested data structure. 
-<br/>
 <br/>For example: you can not use nlohmann/json reflect macro on the reflect structure nested by std container. Or you must implement the interface defined by nlohmann/json.
 <br/>
 <br/>Anyway, it is not convenient for reflecting json to data structure directly, also data structure to json.
-<br/>
 <br/>Use this extension, you can nest very complex data structure. Std container nest Std container, then nest reflect struct , then nest std container, and so on, layer after layer.
 
 ## Note
@@ -35,7 +33,7 @@ auto json1 = R"({
             "name": "qwer", 
             "age": 1000, 
             "sex": true,
-			"flow": 3.000
+            "flow": 3.000
         }, 
         {
             "name": "qq849635649", 
@@ -46,7 +44,7 @@ auto json1 = R"({
             "name": null, 
             "age": 20, 
             "sex": true,
-			"zzzz": "11"
+            "zzzz": "11"
         }
     ]
 })";
@@ -103,8 +101,12 @@ auto json_str = R"(
     "value": 42.99
   },
   "map":{
-    "key1": [{"currency": "USD","value" : 40.99},{"currency": "USD","value" : 41.99,"yes" : true},{"currency": "USD","value" : 42.99}],
-    "key2": [{"currency": "USD","value" : 43.99},{"currency": "USD","value" : 44.99,"yes" : true},{"currency": "USD","value" : 45.99}]
+    "key1": [{"currency": "USD","value" : 40.99},
+             {"currency": "USD","value" : 41.99,"yes" : true},
+             {"currency": "USD","value" : 42.99}],
+    "key2": [{"currency": "USD","value" : 43.99},
+             {"currency": "USD","value" : 44.99,"yes" : true},
+             {"currency": "USD","value" : 45.99}]
   },
   "taowa":{
 	"keyzz": {
