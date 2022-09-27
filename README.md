@@ -13,7 +13,9 @@ It is an extension for nlohmann/json.
 
 ## Note
 Structure fields do not need to be forced a one-to-one correspondence with JSON field.
-<br/>If you are not sure the field existed or not, std::optional is provided when reflecting
+<br/> If you are not sure the field existed or not, std::optional is provided when reflecting.
+<br>  When reflect json to structure and field is not existed in json, std::optional in structure will be empty
+<br>  When reflect structure to json and std::optional in structure is empty, the field in json will be null 
 
 ## Usage
 intrusive reflect 
