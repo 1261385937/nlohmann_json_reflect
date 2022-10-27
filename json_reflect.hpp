@@ -35,7 +35,8 @@ static Container to_std_container(const nlohmann::json& j) {
     if constexpr (is_sequence_std_container_v<Container>) {
         using value_type = typename Container::value_type;
         auto size = j.size();
-        if constexpr (is_std_vector_v<Container> || is_std_unordered_set_v<Container> || is_std_unordered_multiset_v<Container>) {
+        if constexpr (is_std_vector_v<Container>
+            || is_std_unordered_set_v<Container> || is_std_unordered_multiset_v<Container>) {
             c.reserve(size);
         }
 
@@ -50,7 +51,8 @@ static Container to_std_container(const nlohmann::json& j) {
                     c.emplace_front(std::move(value));
                 });
             }
-            else if constexpr (is_std_set_v<Container> || is_std_unordered_set_v<Container> || is_std_multiset_v<Container> || is_std_unordered_multiset_v<Container>) {
+            else if constexpr (is_std_set_v<Container> || is_std_unordered_set_v<Container>
+                || is_std_multiset_v<Container> || is_std_unordered_multiset_v<Container>) {
                 deal_to_detail<value_type>(j[i], [&c](auto&& value) {
                     c.emplace(std::move(value));
                 });
@@ -169,11 +171,11 @@ static void deal_from_detail(Element&& element, Pred&& pred) {
     using element_type = std::remove_reference_t<Element>;
 
     if constexpr (reflection::is_reflection_v<element_type>) {
-        pred(to_json_detail(element));
+        pred(to_json_detail(std::forward<Element>(element)));
     }
-    else if constexpr (is_std_tuple_v<element_type> ||
-        (is_std_container_v<element_type> && is_has_reflect_type_v<element_type>)) {
-        pred(from_std_container(element));
+    else if constexpr (is_std_tuple_v<element_type>
+        || (is_std_container_v<element_type> && is_has_reflect_type_v<element_type>)) {
+        pred(from_std_container(std::forward<Element>(element)));
     }
     else if constexpr (is_std_optional_v<element_type>) {
         element.has_value() ?
@@ -181,7 +183,7 @@ static void deal_from_detail(Element&& element, Pred&& pred) {
             pred(nlohmann::json{});
     }
     else {
-        pred(element);
+        pred(std::forward<Element>(element));
     }
 }
 
@@ -191,19 +193,20 @@ static nlohmann::json from_std_container(Container&& c) {
     nlohmann::json j;
     if constexpr (is_sequence_std_container_v<container_type>) {
         for (auto iter = c.begin(); iter != c.end(); ++iter) {
-            deal_from_detail(*iter, [&j](auto&& json_obj) {
-                j.emplace_back(std::move(json_obj));
+            deal_from_detail(*iter, [&j](auto&& obj) {
+                j.emplace_back(std::forward<decltype(obj)>(obj));
             });
         }
     }
     else if constexpr (is_associative_std_container_v<container_type>) {
         using key_type = typename container_type::key_type;
         if constexpr (!std::is_same_v<key_type, std::string>) {
-            static_assert(always_false_v<key_type>, "associative containers key type only can be std::string");
+            static_assert(always_false_v<key_type>,
+                "associative containers key type only can be std::string");
         }
         for (auto iter = c.begin(); iter != c.end(); ++iter) {
-            deal_from_detail(iter->second, [&j, &iter](auto&& json_obj) {
-                j.emplace(iter->first, std::move(json_obj));
+            deal_from_detail(iter->second, [&j, &iter](auto&& obj) {
+                j.emplace(iter->first, std::forward<decltype(obj)>(obj));
             });
         }
     }
@@ -211,8 +214,8 @@ static nlohmann::json from_std_container(Container&& c) {
         constexpr auto size = std::tuple_size_v<container_type>;
         for_each_tuple([&j, &c](auto i) {
             auto& value = std::get<i>(c);
-            deal_from_detail(value, [&j](auto&& json_obj) {
-                j.emplace_back(std::move(json_obj));
+            deal_from_detail(value, [&j](auto&& obj) {
+                j.emplace_back(std::forward<decltype(obj)>(obj));
             });
         }, std::make_index_sequence<size>());
     }
@@ -233,13 +236,14 @@ static void traversing_to_type(nlohmann::json& j, T&& obj) {
 
         if constexpr (is_std_optional_v<element_type>) {
             element.has_value() ?
-                deal_from_detail(element.value(), [&j, &element_name](auto&& json_obj) {
-                j.emplace(std::move(element_name), std::move(json_obj)); }) :
+                deal_from_detail(element.value(), [&j, &element_name](auto&& obj) {
+                j.emplace(std::move(element_name), std::forward<decltype(obj)>(obj)); })
+                :
                 (void)j.emplace(std::move(element_name), nlohmann::json{});
         }
         else {
-            deal_from_detail(element, [&j, &element_name](auto&& json_obj) {
-                j.emplace(std::move(element_name), std::move(json_obj));
+            deal_from_detail(element, [&j, &element_name](auto&& obj) {
+                j.emplace(std::move(element_name), std::forward<decltype(obj)>(obj));
             });
         }
     }, std::make_index_sequence<ReflectType::args_size_t::value>());
@@ -250,15 +254,15 @@ static nlohmann::json to_json_detail(T&& obj) {
     using type = std::remove_reference_t<T>;
     nlohmann::json j;
     if constexpr (reflection::is_intrusive_reflection_v<type>) {
-        traversing_to_type<type>(j, obj);
+        traversing_to_type<type>(j, std::forward<T>(obj));
     }
     else if constexpr (reflection::is_non_intrusive_reflection_v<type>) {
         using TT = decltype(reflection_reflect_member(std::declval<type>()));
-        traversing_to_type<TT>(j, obj);
+        traversing_to_type<TT>(j, std::forward<T>(obj));
     }
     else if constexpr (is_std_tuple_v<type> ||
         (is_std_container_v<type> && is_has_reflect_type_v<type>)) {
-        j = from_std_container<type>(obj);
+        j = from_std_container(std::forward<T>(obj));
     }
     else if (is_std_optional_v<type>) {
         //for the total (part) json may be null
@@ -266,14 +270,14 @@ static nlohmann::json to_json_detail(T&& obj) {
             to_json_detail(obj.value()) : nlohmann::json{};
     }
     else {
-        j = nlohmann::json{ obj };
+        j = nlohmann::json{ std::forward<T>(obj) };
     }
     return j;
 }
 
 template<typename T>
 static std::string to_json(T&& obj) {
-    auto j = to_json_detail(obj);
+    auto j = to_json_detail(std::forward<T>(obj));
     return j.dump();
 }
 }
