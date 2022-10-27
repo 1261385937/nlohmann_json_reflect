@@ -107,7 +107,12 @@ static void traversing_from_type(const nlohmann::json& j, T&& obj) {
         auto element_name = std::string(names[index]);
 
         if (!j.contains(element_name)) {
-            return;
+            if constexpr (is_std_optional_v<element_type>) {
+                return;
+            }
+            else {
+                throw std::logic_error("key is not exist: " + element_name);
+            }
         }
 
         auto& jj = j[element_name];
