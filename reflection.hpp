@@ -232,6 +232,13 @@ static constexpr void for_each_tuple(F&& f, std::index_sequence<Index...>) {
     (std::forward<F>(f)(std::integral_constant<std::size_t, Index>()), ...);
 }
 
+template<typename F, size_t...I>
+static constexpr void switch_tuple (size_t t, F&& f, std::index_sequence<I...>) {
+    using func_type_array = void(*[sizeof...(I)])(F&&);
+    constexpr func_type_array pfn = { [](auto&& f) { f(std::integral_constant<std::size_t, I>()); } ... };
+    return pfn[t](std::forward<F>(f));
+}
+
 #define ADDRESS(...) \
     using args_size_t = std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>;\
 	constexpr static decltype(auto) elements_address(){\
