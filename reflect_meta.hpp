@@ -171,13 +171,7 @@ inline constexpr bool is_has_reflect_type_v = is_has_reflect_type<T>::value;
 
 //detect std container nest layer
 template<typename T, size_t Layer = 0, typename U = void>
-struct is_nested_sequence :std::false_type {
-    using innermost_type = T;
-    constexpr static size_t layer = Layer;
-};
-
-template<typename T, size_t Layer, typename U = void>
-struct is_nested_sequence :std::true_type {
+struct is_nested_sequence {
     using innermost_type = T;
     constexpr static size_t layer = Layer;
 };
@@ -190,5 +184,5 @@ template<typename T>
 inline constexpr size_t nested_sequence_layer_v = is_nested_sequence<T>::layer;
 
 template<typename T>
-using nested_sequence_type_t = typename is_nested_sequence<T>::innermost_type;
+using nested_sequence_inner_t = typename is_nested_sequence<T>::innermost_type;
 }
