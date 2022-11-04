@@ -9,7 +9,7 @@
 #include <optional>
 #include "reflection.hpp"
 
-namespace jreflect {
+namespace reflection {
 
 template<template<typename...> class Container, typename T>
 struct is_specialization_of :std::false_type {};
@@ -153,10 +153,10 @@ template<typename T, typename U = void>
 struct is_has_reflect_type :std::false_type {};
 
 template<typename T>
-struct is_has_reflect_type<T, std::enable_if_t<std::is_same_v<typename T::reflect_type, reflection::reflect>>> :std::true_type {};
+struct is_has_reflect_type<T, std::enable_if_t<std::is_same_v<typename T::reflect_type, reflect>>> :std::true_type {};
 
 template<typename T>
-struct is_has_reflect_type<T, std::enable_if_t<std::is_same_v<typename decltype(reflection_reflect_member(std::declval<T>()))::reflect_type, reflection::reflect>>> :std::true_type {};
+struct is_has_reflect_type<T, std::enable_if_t<std::is_same_v<typename decltype(reflection_reflect_member(std::declval<T>()))::reflect_type, reflect>>> :std::true_type {};
 
 template<typename T>
 struct is_has_reflect_type<T, std::enable_if_t<is_sequence_std_container_v<T>/*, std::void_t<typename T::value_type>*/>>
