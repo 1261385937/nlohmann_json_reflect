@@ -112,7 +112,7 @@ static void traversing_from(const nlohmann::json& j, T&& obj) {
                 return;
             }
             else {
-                throw std::logic_error("key is not exist: " + element_name);
+                throw std::logic_error("reflect key is not exist in json: " + element_name);
             }
         }
 
@@ -176,12 +176,12 @@ static nlohmann::json from_std_container(Container&& c);
 template<typename Element, typename Pred>
 static void deal_from_detail(Element&& element, Pred&& pred) {
     using element_type = std::remove_reference_t<Element>;
-
+    using namespace reflection;
     if constexpr (reflection::is_reflection_v<element_type>) {
         pred(to_json_detail(std::forward<Element>(element)));
     }
     else if constexpr (reflection::is_std_tuple_v<element_type>
-        || (reflection::is_std_container_v<element_type> && reflection::is_has_reflect_type_v<element_type>)) {
+        || (is_std_container_v<element_type> && is_has_reflect_type_v<element_type>)) {
         pred(from_std_container(std::forward<Element>(element)));
     }
     else if constexpr (reflection::is_std_optional_v<element_type>) {
@@ -258,6 +258,7 @@ static void traversing_to(nlohmann::json& j, T&& obj) {
 
 template<typename T>
 static nlohmann::json to_json_detail(T&& obj) {
+    using namespace reflection;
     using type = std::remove_reference_t<T>;
     nlohmann::json j;
     if constexpr (reflection::is_intrusive_reflection_v<type>) {
@@ -267,14 +268,13 @@ static nlohmann::json to_json_detail(T&& obj) {
         using TT = decltype(reflection_reflect_member(std::declval<type>()));
         traversing_to<TT>(j, std::forward<T>(obj));
     }
-    else if constexpr (reflection::is_std_tuple_v<type> ||
-        (reflection::is_std_container_v<type> && reflection::is_has_reflect_type_v<type>)) {
+    else if constexpr (reflection::is_std_tuple_v<type>
+        || (is_std_container_v<type> && is_has_reflect_type_v<type>)) {
         j = from_std_container(std::forward<T>(obj));
     }
     else if (reflection::is_std_optional_v<type>) {
         //for the total (part) json may be null
-        j = obj.has_value() ?
-            to_json_detail(obj.value()) : nlohmann::json{};
+        j = obj.has_value() ? to_json_detail(obj.value()) : nlohmann::json{};
     }
     else {
         j = nlohmann::json{ std::forward<T>(obj) };
