@@ -99,7 +99,7 @@ static Container to_std_container(const nlohmann::json& j) {
 }
 
 template<typename ReflectType, typename T>
-static void traversing_from_type(const nlohmann::json& j, T&& obj) {
+static void traversing_from(const nlohmann::json& j, T&& obj) {
     constexpr auto names = ReflectType::elements_name();
     constexpr auto address = ReflectType::elements_address();
     for_each_tuple([&j, &obj, &names, &address](auto index) {
@@ -140,11 +140,11 @@ template<typename T>
 static T from_json_detail(const nlohmann::json& j) {
     T t{};
     if constexpr (reflection::is_intrusive_reflection_v<T>) {
-        traversing_from_type<T>(j, t);
+        traversing_from<T>(j, t);
     }
     else if constexpr (reflection::is_non_intrusive_reflection_v<T>) {
         using TT = decltype(reflection_reflect_member(std::declval<T>()));
-        traversing_from_type<TT>(j, t);
+        traversing_from<TT>(j, t);
     }
     else if constexpr (reflection::is_std_tuple_v<T>
         || (reflection::is_std_container_v<T> && reflection::is_has_reflect_type_v<T>)) {
@@ -233,7 +233,7 @@ static nlohmann::json from_std_container(Container&& c) {
 }
 
 template<typename ReflectType, typename T>
-static void traversing_to_type(nlohmann::json& j, T&& obj) {
+static void traversing_to(nlohmann::json& j, T&& obj) {
     constexpr auto names = ReflectType::elements_name();
     constexpr auto address = ReflectType::elements_address();
     for_each_tuple([&j, &obj, &names, &address](auto index) {
@@ -261,11 +261,11 @@ static nlohmann::json to_json_detail(T&& obj) {
     using type = std::remove_reference_t<T>;
     nlohmann::json j;
     if constexpr (reflection::is_intrusive_reflection_v<type>) {
-        traversing_to_type<type>(j, std::forward<T>(obj));
+        traversing_to<type>(j, std::forward<T>(obj));
     }
     else if constexpr (reflection::is_non_intrusive_reflection_v<type>) {
         using TT = decltype(reflection_reflect_member(std::declval<type>()));
-        traversing_to_type<TT>(j, std::forward<T>(obj));
+        traversing_to<TT>(j, std::forward<T>(obj));
     }
     else if constexpr (reflection::is_std_tuple_v<type> ||
         (reflection::is_std_container_v<type> && reflection::is_has_reflect_type_v<type>)) {
