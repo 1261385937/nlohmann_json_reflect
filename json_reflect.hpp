@@ -186,7 +186,7 @@ static void deal_from_detail(Element&& element, Pred&& pred) {
     }
     else if constexpr (reflection::is_std_optional_v<element_type>) {
         element.has_value() ?
-            pred(to_json_detail(element.value())) :
+            pred(to_json_detail(std::forward<Element>(element).value())) :
             pred(nlohmann::json{});
     }
     else {
@@ -199,8 +199,8 @@ static nlohmann::json from_std_container(Container&& c) {
     using container_type = std::decay_t<Container>;
     nlohmann::json j;
     if constexpr (reflection::is_sequence_std_container_v<container_type>) {
-        for (auto iter = c.begin(); iter != c.end(); ++iter) {
-            deal_from_detail(*iter, [&j](auto&& obj) {
+        for (auto&& value : c) {
+            deal_from_detail(std::forward<decltype(value)>(value), [&j](auto&& obj) {
                 j.emplace_back(std::forward<decltype(obj)>(obj));
             });
         }
@@ -211,17 +211,16 @@ static nlohmann::json from_std_container(Container&& c) {
             static_assert(reflection::always_false_v<key_type>,
                 "associative containers key type only can be std::string");
         }
-        for (auto iter = c.begin(); iter != c.end(); ++iter) {
-            deal_from_detail(iter->second, [&j, &iter](auto&& obj) {
-                j.emplace(iter->first, std::forward<decltype(obj)>(obj));
+        for (auto&& [name, value] : c) {
+            deal_from_detail(std::forward<decltype(value)>(value), [&j, &name](auto&& obj) {
+                j.emplace(std::forward<decltype(name)>(name), std::forward<decltype(obj)>(obj));
             });
         }
     }
     else if constexpr (reflection::is_std_tuple_v<container_type>) { //Mixed Array
         constexpr auto size = std::tuple_size_v<container_type>;
         for_each_tuple([&j, &c](auto i) {
-            auto& value = std::get<i>(c);
-            deal_from_detail(value, [&j](auto&& obj) {
+            deal_from_detail(std::get<i>(std::forward<Container>(c)), [&j](auto&& obj) {
                 j.emplace_back(std::forward<decltype(obj)>(obj));
             });
         }, std::make_index_sequence<size>());
@@ -237,19 +236,20 @@ static void traversing_to(nlohmann::json& j, T&& obj) {
     constexpr auto names = ReflectType::elements_name();
     constexpr auto address = ReflectType::elements_address();
     for_each_tuple([&j, &obj, &names, &address](auto index) {
-        auto& element = obj.*std::get<index>(address);
-        using element_type = std::remove_reference_t<decltype(element)>;
+        auto&& element = std::forward<T>(obj).*std::get<index>(address);
+        using element_type = decltype(element);
+        using pure_element_type = std::remove_reference_t<element_type>;
         auto element_name = std::string(names[index]);
 
-        if constexpr (reflection::is_std_optional_v<element_type>) {
+        if constexpr (reflection::is_std_optional_v<pure_element_type>) {
             element.has_value() ?
-                deal_from_detail(element.value(), [&j, &element_name](auto&& obj) {
+                deal_from_detail(std::forward<element_type>(element).value(), [&j, &element_name](auto&& obj) {
                 j.emplace(std::move(element_name), std::forward<decltype(obj)>(obj)); })
                 :
-                (void)j.emplace(std::move(element_name), nlohmann::json{});
+                    (void)j.emplace(std::move(element_name), nlohmann::json{});
         }
         else {
-            deal_from_detail(element, [&j, &element_name](auto&& obj) {
+            deal_from_detail(std::forward<element_type>(element), [&j, &element_name](auto&& obj) {
                 j.emplace(std::move(element_name), std::forward<decltype(obj)>(obj));
             });
         }
@@ -274,7 +274,8 @@ static nlohmann::json to_json_detail(T&& obj) {
     }
     else if (reflection::is_std_optional_v<type>) {
         //for the total (part) json may be null
-        j = obj.has_value() ? to_json_detail(obj.value()) : nlohmann::json{};
+        j = obj.has_value() ?
+            to_json_detail(std::forward<T>(obj).value()) : nlohmann::json{};
     }
     else {
         j = nlohmann::json{ std::forward<T>(obj) };
