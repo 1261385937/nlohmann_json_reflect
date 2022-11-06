@@ -124,14 +124,21 @@ struct json_struct {
 };
 REFLECT_NON_INTRUSIVE(json_struct, nothing, name, happy, pi, answer, list, object, map, taowa);
 
+struct test_struct {
+    std::optional<std::string> f;
+    REFLECT_INTRUSIVE(test_struct, f);
+};
+
+
 int main() {
     auto json1_data = jreflect::from_json<sjson1>(json1);
     auto json1_str = jreflect::to_json(json1_data);
 
-
     auto j_data = jreflect::from_json<json_struct>(json_str);
     auto j_str = jreflect::to_json(j_data);
 
-
+    test_struct ts{ "3445988958568569586565446e5yeyrtyru" };
+    auto test_struct_str = jreflect::to_json(std::move(ts));
+ 
     return 0;
 }
