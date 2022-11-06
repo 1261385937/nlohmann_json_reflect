@@ -169,7 +169,7 @@ struct is_has_reflect_type<T, std::enable_if_t<is_associative_std_container_v<T>
 template<typename T>
 inline constexpr bool is_has_reflect_type_v = is_has_reflect_type<T>::value;
 
-//detect std container nest layer
+//detect sequence nest layer
 template<typename T, size_t Layer = 0, typename U = void>
 struct is_nested_sequence {
     using innermost_type = T;
@@ -185,4 +185,43 @@ inline constexpr size_t nested_sequence_layer_v = is_nested_sequence<T>::layer;
 
 template<typename T>
 using nested_sequence_inner_t = typename is_nested_sequence<T>::innermost_type;
+
+//detect associative nest layer
+template<typename T, size_t Layer = 0, typename U = void>
+struct is_nested_associative {
+    using innermost_type = T;
+    constexpr static size_t layer = Layer;
+};
+
+template<typename T, size_t Layer>
+struct is_nested_associative<T, Layer, std::enable_if_t<is_associative_std_container_v<T>>>
+    : is_nested_associative<typename T::mapped_type, Layer + 1> {};
+
+template<typename T>
+inline constexpr size_t nested_associative_layer_v = is_nested_associative<T>::layer;
+
+template<typename T>
+using nested_associative_inner_t = typename is_nested_associative<T>::innermost_type;
+
+//detect std container nest layer
+template<typename T, size_t Layer = 0, typename U = void>
+struct is_nested_std_container {
+    using innermost_type = T;
+    constexpr static size_t layer = Layer;
+};
+
+template<typename T, size_t Layer>
+struct is_nested_std_container<T, Layer, std::enable_if_t<is_sequence_std_container_v<T>>>
+    : is_nested_std_container<typename T::value_type, Layer + 1> {};
+
+template<typename T, size_t Layer>
+struct is_nested_std_container<T, Layer, std::enable_if_t<is_associative_std_container_v<T>>>
+    : is_nested_std_container<typename T::mapped_type, Layer + 1> {};
+
+template<typename T>
+inline constexpr size_t nested_std_container_layer_v = is_nested_std_container<T>::layer;
+
+template<typename T>
+using nested_std_container_inner_t = typename is_nested_std_container<T>::innermost_type;
+
 }
