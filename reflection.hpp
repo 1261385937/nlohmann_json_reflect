@@ -184,7 +184,7 @@ namespace reflection {
     struct intrusive_reflection :std::false_type {};
 
     template<typename T>
-    struct intrusive_reflection<T, std::enable_if_t<std::is_same_v<typename T::reflect_type, reflect>>> :std::true_type {};
+    struct intrusive_reflection<T, std::enable_if_t<std::is_same_v<typename std::decay_t<T>::reflect_type, reflect>>> :std::true_type {};
 
     template<typename T>
     inline constexpr bool is_intrusive_reflection_v = intrusive_reflection<T>::value;
