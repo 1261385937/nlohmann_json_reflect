@@ -1,3 +1,7 @@
+#pragma once
+#ifndef REFLECTION_META
+#define REFLECTION_META
+
 #include <vector>
 #include <deque>
 #include <list>
@@ -7,6 +11,7 @@
 #include <map>
 #include <unordered_map>
 #include <optional>
+#include <memory>
 #include "reflection.hpp"
 
 namespace reflection {
@@ -86,6 +91,12 @@ struct is_std_tuple :is_specialization_of<std::tuple, std::decay_t<T>> {};
 template<typename T>
 struct is_std_optional : is_specialization_of<std::optional, std::decay_t<T>> {};
 
+template<typename T>
+struct is_std_sharedptr : is_specialization_of<std::shared_ptr, std::decay_t<T>> {};
+
+template<typename T>
+struct is_std_uniqueptr : is_specialization_of<std::unique_ptr, std::decay_t<T>> {};
+
 //compile time true/false
 template <typename T>
 inline constexpr bool is_std_vector_v = is_std_vector<T>::value;
@@ -131,6 +142,16 @@ inline constexpr bool is_std_tuple_v = is_std_tuple<T>::value;
 
 template <typename T>
 inline constexpr bool is_std_optional_v = is_std_optional<T>::value;
+
+template <typename T>
+inline constexpr bool is_std_sharedptr_v = is_std_sharedptr<T>::value;
+
+template <typename T>
+inline constexpr bool is_std_uniqueptr_v = is_std_uniqueptr<T>::value;
+
+template<typename T>
+inline constexpr bool is_std_smartptr_v =
+is_std_sharedptr_v<T> || is_std_uniqueptr_v<T>;
 
 template<typename T>
 inline constexpr bool is_sequence_std_container_v =
@@ -225,3 +246,5 @@ template<typename T>
 using nested_std_container_inner_t = typename is_nested_std_container<T>::innermost_type;
 
 }
+
+#endif
